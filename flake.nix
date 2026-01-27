@@ -25,7 +25,6 @@
           tracy
           mimalloc
           cmake
-          fmt
           pkg-config
           hwloc
           perf
