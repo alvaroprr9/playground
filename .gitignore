@@ -1,6 +1,16 @@
 # Prerequisites
 *.d
 
+.vscode/
+.vs/
+*build*/
+.venv/
+.DS_Store
+.cache/
+docs/html/
+docs/latex/
+__pycache__/
+
 # Compiled Object files
 *.slo
 *.lo
