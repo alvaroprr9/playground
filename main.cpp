@@ -36,16 +36,6 @@ void imprimirArray(int *arr, int size)
     }
 }
 
-int main()
-{
-    int n = 1230000000;
-    int *ptr = &n;
-    float *x = (float *)&n;
-
-    printf("%d\n", n);
-    printf("%f\n", *x);
-}
-
 // int main()
 // {
 //     HelloWorldIf(3);
