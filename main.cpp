@@ -36,6 +36,23 @@ void imprimirArray(int *arr, int size)
     }
 }
 
+int main()
+{
+
+    int A[] = {1, 2, 3, 4};
+    int B[] = {1, 2, 3, 4};
+    constexpr int n = 4;
+    int C[n];
+    for (int i = 0; i < n; i++)
+    {
+        C[i] = A[i] + B[i];
+    }
+    for (int i = 0; i < n; i++)
+    {
+        printf("%d", C[i]);
+    }
+    return 0;
+}
 // int main()
 // {
 //     HelloWorldIf(3);
