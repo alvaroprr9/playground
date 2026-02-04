@@ -36,6 +36,14 @@ void imprimirArray(int *arr, int size)
     }
 }
 
+void sumArrays(int *a, int *b, int *c, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        *(c + i) = *(a + i) + *(b + i);
+    }
+}
+
 int main()
 {
 
@@ -43,13 +51,10 @@ int main()
     int B[] = {1, 2, 3, 4};
     constexpr int n = 4;
     int C[n];
-    for (int i = 0; i < n; i++)
+    sumArrays(A, B, C, n);
+    for (int i = 0; i < 4; i++)
     {
-        C[i] = A[i] + B[i];
-    }
-    for (int i = 0; i < n; i++)
-    {
-        printf("%d", C[i]);
+        printf("%d ", *(C + i));
     }
     return 0;
 }
