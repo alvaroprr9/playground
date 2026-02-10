@@ -1,47 +1,82 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <cstdint>
+#include <stdlib.h>
+#include <stdint.h>
 
-typedef int8_t i8;
-typedef int16_t i16;
 typedef int32_t i32;
-typedef int64_t i64;
-
-typedef uint8_t u8;
-typedef uint16_t u16;
 typedef uint32_t u32;
-typedef uint64_t u64;
-
-typedef float f32;
-typedef double f64;
 
 typedef struct
 {
-    f32 x;
-    f32 y;
-    f32 mass;
-} Particle;
+    i32 *data;    
+    u32 capacity; 
+    u32 size;     
+} Stack;
+Stack *stack_create(u32 initial_capacity)
+{
+    Stack *stack = (Stack *)malloc(sizeof(Stack));
+    stack->data = (i32 *)malloc(initial_capacity * sizeof(i32));
+    stack->capacity = initial_capacity;
+    stack->size = 0;
+    return stack;
+}
+
+void stack_push(Stack *stack, i32 value)
+{
+    if (stack->size == stack->capacity)
+    {
+        u32 new_capacity = stack->capacity * 2;
+        i32 *new_data = (i32 *)realloc(stack->data, new_capacity * sizeof(i32));
+
+        if (!new_data)
+        {
+            printf("Error redimensionando el stack\n");
+            return;
+        }
+
+        stack->data = new_data;
+        stack->capacity = new_capacity;
+
+        printf("Capacidad aumentada a %u\n", new_capacity);
+    }
+
+    stack->data[stack->size] = value;
+    stack->size++;
+}
+
+
+i32 stack_pop(Stack *stack)
+{
+    if (stack->size == 0)
+    {
+        printf("Error: stack vacío\n");
+        return 0;
+    }
+
+    stack->size--;
+    return stack->data[stack->size];
+}
+
+void stack_free(Stack *stack)
+{
+    if (stack)
+    {
+        free(stack->data);
+        free(stack);
+    }
+}
+
 
 int main()
 {
-    const u32 n = 3;
-    Particle p;
-    p.x = 1.f;
-    p.y = 6.f;
-    p.mass = 23.f;
+    Stack *stack = stack_create(2);
 
-    Particle *z = (Particle *)malloc(n * sizeof(Particle));
+    if (!stack)
+        return 1;
 
-    z->x = 3.f;
-    z->y = 0.f;
+    stack_push(stack, 10);
 
-    for (u32 i = 0; i < n; ++i)
-    {
-        z[i].x = 1.f;
-        z[i].y = 6.f;
-        z[i].mass = 23.f;
-    }
+    printf("Pop: %d\n", stack_pop(stack));
+    stack_free(stack);
 
-    free(z);
     return 0;
 }
