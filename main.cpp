@@ -7,10 +7,11 @@ typedef uint32_t u32;
 
 typedef struct
 {
-    i32 *data;    
-    u32 capacity; 
-    u32 size;     
+    i32 *data;
+    u32 capacity;
+    u32 size;
 } Stack;
+
 Stack *stack_create(u32 initial_capacity)
 {
     Stack *stack = (Stack *)malloc(sizeof(Stack));
@@ -25,15 +26,18 @@ void stack_push(Stack *stack, i32 value)
     if (stack->size == stack->capacity)
     {
         u32 new_capacity = stack->capacity * 2;
-        i32 *new_data = (i32 *)realloc(stack->data, new_capacity * sizeof(i32));
-
-        if (!new_data)
+        i32 *ndata = (i32 *)malloc(new_capacity * sizeof(i32));
+        if (!ndata)
         {
             printf("Error redimensionando el stack\n");
             return;
         }
 
-        stack->data = new_data;
+        for (u32 i = 0; i < stack->size; ++i)
+            ndata[i] = stack->data[i];
+
+        free(stack->data);
+        stack->data = ndata;
         stack->capacity = new_capacity;
 
         printf("Capacidad aumentada a %u\n", new_capacity);
@@ -43,12 +47,11 @@ void stack_push(Stack *stack, i32 value)
     stack->size++;
 }
 
-
 i32 stack_pop(Stack *stack)
 {
     if (stack->size == 0)
     {
-        printf("Error: stack vacío\n");
+        printf("Error: stack vacio\n");
         return 0;
     }
 
@@ -64,7 +67,6 @@ void stack_free(Stack *stack)
         free(stack);
     }
 }
-
 
 int main()
 {
