@@ -54,28 +54,35 @@ i32 stack_pop(Stack *stack)
     if (stack->size == 0)
     {
         printf("Error: stack vacio\n");
-        return 0;
+        return 0
     }
 
     stack->size--;
-    if (stack->size<= stack->capacity && stack->size/2 >= stack->initial_capacity)
+    i32 value = stack->data[stack->size];
+
+    if (stack->size <= stack->capacity / 4 && stack->capacity / 2 >= stack->initial_capacity)
+    {
+        u32 new_capacity = stack->capacity / 2;
+        i32 *ndata = (i32 *)malloc(new_capacity * sizeof(i32));
+        if (!ndata)
         {
-            u32 new_capacity = stack->capacity / 2;
-            i32 *ndata = (i32 *)malloc(new_capacity * sizeof(i32));
-            if (!ndata)
-            {
-                printf("Error redimensionando el stack\n");
-                return;
-            }
+            printf("Error redimensionando el stack\n");
+            return value;
+        }
 
-            for (u32 i = 0; i < stack->size; ++i)
-                ndata[i] = stack->data[i];
+        for (u32 i = 0; i < stack->size; ++i)
+            ndata[i] = stack->data[i];
 
-            free(stack->data);
-            stack->data = ndata;
-            stack->capacity = new_capacity;
-    return stack->data[stack->size];
+        free(stack->data);
+        stack->data = ndata;
+        stack->capacity = new_capacity;
+
+        printf("Capacidad reducida a %u\n", new_capacity);
+    }
+
+    return value;
 }
+
 
 void stack_free(Stack * stack)
 {
