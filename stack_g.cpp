@@ -1,4 +1,4 @@
-#include "stack.hpp"
+#include "stack_g.hpp"
 #include <stdio.h>
 
 // + + + + - - - - - - - -

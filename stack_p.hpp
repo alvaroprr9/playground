@@ -1,5 +1,5 @@
-#ifndef MY_STACK
-#define MY_STACK
+#ifndef MY_STACK_P
+#define MY_STACK_P
 
 #include <stdlib.h>
 #include <stdint.h>

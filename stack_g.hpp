@@ -1,9 +1,8 @@
-#ifndef MY_STACK
-#define MY_STACK
+#ifndef MY_STACK_G
+#define MY_STACK_G
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
 #include <memory>
 
 typedef int64_t i64;

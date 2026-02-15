@@ -1,3 +1,4 @@
+#include "stack_p.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -19,12 +20,12 @@ typedef double f64;
 
 // 1 byte -> 8bits
 
-typedef struct
+struct Stack
 {
     std::byte *data;
     u32 capacity;
     u32 size;
-} Stack;
+};
 
 Stack *stack_create(u32 initial_capacity)
 {
@@ -90,7 +91,7 @@ void stack_push(Stack *stack, std::byte *memory, u32 elemSize)
     // stack->size++;
 }
 
-i32 stack_pop(Stack *stack)
+void stack_pop(Stack *stack)
 {
 }
 
