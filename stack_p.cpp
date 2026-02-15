@@ -102,18 +102,3 @@ void stack_free(Stack *stack)
         free(stack);
     }
 }
-
-int main()
-{
-    Stack *stack = stack_create(2);
-
-    if (!stack)
-        return 1;
-
-    // stack_push(stack, 10);
-
-    printf("Pop: %d\n", stack_pop(stack));
-    stack_free(stack);
-
-    return 0;
-}
