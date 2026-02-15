@@ -21,18 +21,16 @@ typedef double f64;
 
 typedef struct
 {
-    void *data;
+    std::byte *data;
     u32 capacity;
     u32 size;
-    u32 elem_size;
 } Stack;
 
-Stack *stack_create(u32 initial_capacity, u32 elem_size)
+Stack *stack_create(u32 initial_capacity)
 {
     Stack *stack = (Stack *)malloc(sizeof(Stack));
-    stack->data = (std::byte *)malloc(initial_capacity * elem_size);
+    stack->data = (std::byte *)malloc(initial_capacity);
     stack->capacity = initial_capacity;
-    stack->elem_size = elem_size;
     stack->size = 0;
     return stack;
 }
@@ -60,12 +58,12 @@ Stack *stack_create(u32 initial_capacity, u32 elem_size)
 //
 //
 
-void stack_push(Stack *stack, void *value)
+void stack_push(Stack *stack, std::byte *memory, u32 elemSize)
 {
-    if (stack->size == stack->capacity)
+    if (stack->size + elemSize > stack->capacity)
     {
         u32 new_capacity = stack->capacity * 2;
-        void *ndata = realloc(stack->data, new_capacity * stack->elem_size);
+        std::byte *ndata = (std::byte *)malloc(new_capacity);
         if (!ndata)
         {
             printf("Error redimensionando el stack\n");
@@ -81,23 +79,19 @@ void stack_push(Stack *stack, void *value)
         printf("Capacidad aumentada a %u\n", new_capacity);
     }
 
-    void *dest = (std::byte *)stack->data + (stack->size * stack->elem_size);
+    std::byte *dst = stack->data + stack->size;
+    std::byte *src = memory;
 
-    memcpy(dest, value, stack->elem_size);
+    memcpy(dst, src, elemSize);
 
-    stack->size++;
+    stack->size += elemSize;
+
+    // stack->data[stack->size] = value;
+    // stack->size++;
 }
-void stack_pop(Stack *stack, void *out_value)
-{
-    if (stack->size == 0)
-    {
-        printf("Stack vacio\n");
-        return;
-    }
 
-    stack->size--;
-    void *src = (std::byte *)stack->data + (stack->size * stack->elem_size);
-    memcpy(out_value, src, stack->elem_size);
+i32 stack_pop(Stack *stack)
+{
 }
 
 void stack_free(Stack *stack)
@@ -111,22 +105,15 @@ void stack_free(Stack *stack)
 
 int main()
 {
-    // Stack de int
-    Stack *int_stack = stack_create(2, sizeof(i32));
+    Stack *stack = stack_create(2);
 
-    f32 val;
-    stack_push(int_stack, &val);
+    if (!stack)
+        return 1;
 
-    i32 a = 10;
-    i32 b = 20;
+    // stack_push(stack, 10);
 
-    stack_push(int_stack, &a);
-    stack_push(int_stack, &b);
+    printf("Pop: %d\n", stack_pop(stack));
+    stack_free(stack);
 
-    stack_free(int_stack);
-
-    // Stack de double
-    Stack *double_stack = stack_create(2, sizeof(f64));
-    stack_free(double_stack);
     return 0;
 }
