@@ -1,9 +1,8 @@
-#ifndef MY_STACK_P
-#define MY_STACK_P
+#ifndef MY_STACK_G
+#define MY_STACK_G
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
 #include <memory>
 
 typedef int64_t i64;
@@ -22,9 +21,9 @@ typedef double f64;
 // 1 byte -> 8bits
 
 struct Stack;
-Stack *stack_create(u32 initial_capacity);
-void stack_push(Stack *stack, std::byte *memory, u32 elemSize);
-void stack_pop(Stack *stack);
+Stack *stack_create(u32 initial_capacity, u32 elem_size);
+void stack_push(Stack *stack, void *value);
+void stack_pop(Stack *stack, void *out_value);
 void stack_free(Stack *stack);
 
 #endif

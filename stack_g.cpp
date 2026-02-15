@@ -1,5 +1,40 @@
-#include "stack_g.hpp"
+#include "stack_p.hpp"
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <memory>
+
+typedef int64_t i64;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t i8;
+
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
+
+typedef float f32;
+typedef double f64;
+
+// 1 byte -> 8bits
+
+struct Stack
+{
+    std::byte *data;
+    u32 capacity;
+    u32 size;
+};
+
+Stack *stack_create(u32 initial_capacity)
+{
+    Stack *stack = (Stack *)malloc(sizeof(Stack));
+    stack->data = (std::byte *)malloc(initial_capacity);
+    stack->capacity = initial_capacity;
+    stack->size = 0;
+    return stack;
+}
 
 // + + + + - - - - - - - -
 // >
@@ -24,30 +59,12 @@
 //
 //
 
-struct Stack
+void stack_push(Stack *stack, std::byte *memory, u32 elemSize)
 {
-    void *data;
-    u32 capacity;
-    u32 size;
-    u32 elem_size;
-};
-
-Stack *stack_create(u32 initial_capacity, u32 elem_size)
-{
-    Stack *stack = (Stack *)malloc(sizeof(Stack));
-    stack->data = (std::byte *)malloc(initial_capacity * elem_size);
-    stack->capacity = initial_capacity;
-    stack->elem_size = elem_size;
-    stack->size = 0;
-    return stack;
-}
-
-void stack_push(Stack *stack, void *value)
-{
-    if (stack->size == stack->capacity)
+    if (stack->size + elemSize > stack->capacity)
     {
         u32 new_capacity = stack->capacity * 2;
-        void *ndata = realloc(stack->data, new_capacity * stack->elem_size);
+        std::byte *ndata = (std::byte *)malloc(new_capacity);
         if (!ndata)
         {
             printf("Error redimensionando el stack\n");
@@ -63,24 +80,21 @@ void stack_push(Stack *stack, void *value)
         printf("Capacidad aumentada a %u\n", new_capacity);
     }
 
-    void *dest = (std::byte *)stack->data + (stack->size * stack->elem_size);
+    std::byte *dst = stack->data + stack->size;
+    std::byte *src = memory;
 
-    memcpy(dest, value, stack->elem_size);
+    memcpy(dst, src, elemSize);
 
-    stack->size++;
+    stack->size += elemSize;
+
+    // stack->data[stack->size] = value;
+    // stack->size++;
 }
-void stack_pop(Stack *stack, void *out_value)
+
+void stack_pop(Stack *stack)
 {
-    if (stack->size == 0)
-    {
-        printf("Stack vacio\n");
-        return;
-    }
-
-    stack->size--;
-    void *src = (std::byte *)stack->data + (stack->size * stack->elem_size);
-    memcpy(out_value, src, stack->elem_size);
 }
+
 void stack_free(Stack *stack)
 {
     if (stack)

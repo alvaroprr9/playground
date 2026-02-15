@@ -1,4 +1,4 @@
-#include "stack.hpp"
+#include "stack_p.hpp"
 
 int main()
 {
