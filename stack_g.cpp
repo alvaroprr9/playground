@@ -1,4 +1,4 @@
-#include "stack_p.hpp"
+ #include "stack_p.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,14 +25,16 @@ struct Stack
     std::byte *data;
     u32 capacity;
     u32 size;
+    u32 elem_size;
 };
 
-Stack *stack_create(u32 initial_capacity)
+Stack *stack_create(u32 initial_capacity, u32 elem_size)
 {
     Stack *stack = (Stack *)malloc(sizeof(Stack));
-    stack->data = (std::byte *)malloc(initial_capacity);
     stack->capacity = initial_capacity;
     stack->size = 0;
+    stack->elem_size = elem_size;
+    stack->data = (std::byte *)malloc(initial_capacity*initial_capacity);
     return stack;
 }
 
@@ -59,40 +61,52 @@ Stack *stack_create(u32 initial_capacity)
 //
 //
 
-void stack_push(Stack *stack, std::byte *memory, u32 elemSize)
+void stack_resize(Stack *stack)
 {
-    if (stack->size + elemSize > stack->capacity)
+    u32 new_capacity = stack->capacity * 2;
+
+    std::byte *ndata = (std::byte *)malloc(new_capacity * stack->elem_size);
+    if (!ndata)
     {
-        u32 new_capacity = stack->capacity * 2;
-        std::byte *ndata = (std::byte *)malloc(new_capacity);
-        if (!ndata)
-        {
-            printf("Error redimensionando el stack\n");
-            return;
-        }
-
-        memcpy(ndata, stack->data, stack->size);
-
-        free(stack->data);
-        stack->data = ndata;
-        stack->capacity = new_capacity;
-
-        printf("Capacidad aumentada a %u\n", new_capacity);
+        printf("Error redimensionando el stack\n");
+        return;
     }
 
-    std::byte *dst = stack->data + stack->size;
-    std::byte *src = memory;
+    memcpy(ndata, stack->data, stack->size * stack->elem_size);
 
-    memcpy(dst, src, elemSize);
+    free(stack->data);
 
-    stack->size += elemSize;
-
-    // stack->data[stack->size] = value;
-    // stack->size++;
+    stack->data = ndata;
+    stack->capacity = new_capacity;
 }
 
-void stack_pop(Stack *stack)
+void stack_push(Stack *stack, void *element)
 {
+    if (stack->size == stack->capacity)
+    {
+        stack_resize(stack);
+    }
+
+    std::byte *dst = stack->data + (stack->size * stack->elem_size);
+
+    memcpy(dst, element, stack->elem_size);
+
+    stack->size++;
+}
+
+void stack_pop(Stack *stack, void *out_element)
+{
+    if (stack->size == 0)
+    {
+        printf("Stack underflow\n");
+        return;
+    }
+
+    stack->size--;
+
+    std::byte *src = stack->data + (stack->size * stack->elem_size);
+
+    memcpy(out_element, src, stack->elem_size);
 }
 
 void stack_free(Stack *stack)
@@ -102,4 +116,22 @@ void stack_free(Stack *stack)
         free(stack->data);
         free(stack);
     }
+}
+
+int main()
+{
+    Stack *intStack = stack_create(2, sizeof(i32));
+
+    i32 a = 10;
+    i32 b = 20;
+
+    stack_push(intStack, &a);
+    stack_push(intStack, &b);
+
+    i32 result;
+    stack_pop(intStack, &result);
+
+    printf("Pop int: %d\n", result);
+
+    stack_free(intStack);
 }
