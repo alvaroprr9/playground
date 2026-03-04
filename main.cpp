@@ -1,23 +1,35 @@
-#include "stack_p.hpp"
+#include "onyx/core/core.hpp"
+#include "onyx/platform/window.hpp"
+#include "onyx/execution/execution.hpp"
 
 int main()
 {
-    // Stack de int
-    Stack *int_stack = stack_create(2, sizeof(i32));
+    ONYX_CHECK_EXPRESSION(Onyx::Initialize());
 
-    f32 val;
-    stack_push(int_stack, &val);
+    Onyx::Window *window = ONYX_CHECK_EXPRESSION(Onyx::Platform::CreateWindow());
+    while (!window->ShouldClose())
+        if (ONYX_CHECK_EXPRESSION(window->AcquireNextImage()))
+        {
+            Onyx::Input::PollEvents();
+            VKit::Queue *gqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Graphics);
+            ONYX_CHECK_EXPRESSION(gqueue->UpdateCompletedTimeline());
+            Onyx::CommandPool *gpool =
+                ONYX_CHECK_EXPRESSION(Onyx::Execution::FindSuitableCommandPool(VKit::Queue_Graphics));
 
-    i32 a = 10;
-    i32 b = 20;
+            const VkCommandBuffer gcmd = ONYX_CHECK_EXPRESSION(Onyx::Execution::Allocate(gpool));
+            ONYX_CHECK_EXPRESSION(Onyx::Execution::BeginCommandBuffer(gcmd));
+            // Onyx::Renderer::ApplyAcquireBarriers(gcmd);
 
-    stack_push(int_stack, &a);
-    stack_push(int_stack, &b);
+            window->BeginRendering(gcmd);
+            const Onyx::Renderer::RenderSubmitInfo rinfo =
+                ONYX_CHECK_EXPRESSION(Onyx::Renderer::Render(gqueue, gcmd, window->CreateViewInfo()));
+            window->MarkSubmission(gqueue->GetTimelineSempahore(), rinfo.InFlightValue);
+            window->EndRendering(gcmd);
 
-    stack_free(int_stack);
+            ONYX_CHECK_EXPRESSION(Onyx::Execution::EndCommandBuffer(gcmd));
+            ONYX_CHECK_EXPRESSION(Onyx::Renderer::SubmitRender(gqueue, gpool, rinfo));
+            ONYX_CHECK_EXPRESSION(window->Present());
+        }
 
-    // Stack de double
-    Stack *double_stack = stack_create(2, sizeof(f64));
-    stack_free(double_stack);
-    return 0;
+    Onyx::Terminate();
 }

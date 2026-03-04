@@ -8,6 +8,15 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FetchContent)
+FetchContent_Declare(
+  onyx
+  GIT_REPOSITORY https://github.com/ismawno/onyx.git
+  GIT_TAG main
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE)
+FetchContent_MakeAvailable(onyx)
+
 set(CMAKE_BUILD_TYPE
     "Debug"
     CACHE STRING "")
@@ -15,3 +24,5 @@ set(CMAKE_BUILD_TYPE
 set(SOURCES main.cpp)
 
 add_executable(playground ${SOURCES})
+
+target_link_libraries(playground PRIVATE onyx)
