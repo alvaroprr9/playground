@@ -8,7 +8,7 @@ int main()
 
     Onyx::Window *window = ONYX_CHECK_EXPRESSION(Onyx::Platform::CreateWindow());
     while (!window->ShouldClose())
-        if (ONYX_CHECK_EXPRESSION(window->AcquireNextImage()))
+        if (ONYX_CHECK_EXPRESSION(window->AcquireNextImage(Onyx::Block)))
         {
             Onyx::Input::PollEvents();
             VKit::Queue *gqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Graphics);
