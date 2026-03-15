@@ -9,32 +9,51 @@ template <typename F> void RunWindow(Onyx::Window *window, F fun);
 using Onyx::D2;
 using Onyx::D3;
 using namespace TKit::Alias;
-namespace Math = Onyx::Math;
 
 void Run2(Onyx::Window *window)
 {
     Onyx::RenderContext<D2> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D2>());
     const Onyx::StatMeshData<D2> data = Onyx::Assets::CreateSquareMesh<D2>();
-    const Onyx::Mesh square = Onyx::Assets::AddMesh(data); 
+    const Onyx::Mesh square = Onyx::Assets::AddMesh(data);
     ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
 
-    window->CreateCamera<D2>();
+    Onyx::Camera<D2> *cam = window->CreateCamera<D2>();
     ctx->AddTarget(window);
     Onyx::PointLight<D2> *pl = ctx->AddPointLight();
+
+    // cam->GetWorldMousePosition();
+    // f32v2 vec;
+    // to access x -> vec[0];
+    // to access y -> vec[1];
 
     f32 y = 0.f;
     f32 x = 0.f;
     f32 vy = 0.f;
     f32 vx = 1.f;
-   /* f32 xx = 2.f;
-    f32 yy = 0.f;
-    f32 vxx = 2.f;
-    f32 vyy = 2.f;*/
+    const f32 radius = 0.1f;
+
+    const f32 bw = 1.5f;
+    const f32 bh = 1.5f;
+    const f32 wallWidth = 0.1f;
+
+    const f32 bx = 0.5f * bw;
+    const f32 by = 0.5f * bh;
+
     const f32 g = 1.f;
     TKit::Clock clock{};
     RunWindow(window, [&] {
+        for (const Onyx::Event &event : window->GetNewEvents())
+            if (event.Type == Onyx::Event_Scrolled)
+            {
+                const f32 factor = Onyx::Input::IsKeyPressed(window, Onyx::Input::Key_LeftShift) ? 0.05f : 0.005f;
+                cam->ControlScrollWithUserInput(factor * event.ScrollOffset[1]);
+            }
+        window->FlushEvents();
+
         ctx->Flush();
         const TKit::Timespan elapsed = clock.Restart();
+        cam->ControlMovementWithUserInput(elapsed);
+
         const f32 dt = elapsed.AsSeconds();
 
         const f32 dvx = 0.0f;
@@ -47,72 +66,68 @@ void Run2(Onyx::Window *window)
         x += dx;
         y += dy;
 
-        /*const f32 dvxx = 0.0f;
-        const f32 dvyy = -g * dt;
-        vxx += dvxx;
-        vyy += dvyy;
-
-        const f32 dxx = vxx * dt;
-        const f32 dyy = vyy * dt;
-        xx += dxx;
-        yy += dyy;*/
-
-        if ((y <= -0.3f && vy < 0.f) || (y >= 0.3f && vy > 0.f))
+        const f32 bY = by - radius - 0.5f * wallWidth;
+        const f32 bX = bx - radius - 0.5f * wallWidth;
+        if (y <= -bY && vy < 0.f)
+        {
+            y = -bY;
             vy = -vy;
-        if ((x <= -0.3f && vx < 0.f) || (x>=0.3f && vx>0.f))
+        }
+        if (y >= bY && vy > 0.f)
+        {
+            y = bY;
+            vy = -vy;
+        }
+        if (x <= -bX && vx < 0.f)
+        {
+            x = -bX;
             vx = -vx;
-        
-        //ctx->FillColor(Onyx::Color::Orange);
+        }
+        if (x >= bX && vx > 0.f)
+        {
+            x = bX;
+            vx = -vx;
+        }
+
+        // ctx->FillColor(Onyx::Color::Orange);
         ctx->Push();
         ctx->FillColor(Onyx::Color::White);
-        ctx->Scale(0.5f);
+        ctx->Scale(2.f * radius);
         ctx->TranslateY(y);
         ctx->TranslateX(x);
         ctx->Circle();
         ctx->Pop();
 
-        /*ctx->Push();
-        ctx->FillColor(Onyx::Color::White);
-        ctx->Scale(0.5f);
-        ctx->TranslateY(yy);
-        ctx->TranslateX(xx);
-        ctx->Circle();
-        ctx->Pop();*/
-
         ctx->Push();
-        ctx->TranslateY(+3.0);
-        ctx->ScaleY(0.2);
-        ctx->ScaleX(1.5f);
+        ctx->ScaleY(wallWidth);
+        ctx->ScaleX(bw);
+        ctx->TranslateY(by);
         ctx->StaticMesh(square);
         ctx->Pop();
 
         ctx->Push();
-        ctx->TranslateX(+3.0);
-        ctx->ScaleX(0.2);
-        ctx->ScaleY(1.5f);
+        ctx->ScaleX(wallWidth);
+        ctx->ScaleY(bh + wallWidth);
+        ctx->TranslateX(bx);
         ctx->StaticMesh(square);
         ctx->Pop();
-
 
         ctx->Push();
-        ctx->TranslateX(-3.0);
-        ctx->ScaleX(0.2);
-        ctx->ScaleY(1.5f);
+        ctx->ScaleX(wallWidth);
+        ctx->ScaleY(bh + wallWidth);
+        ctx->TranslateX(-bx);
         ctx->StaticMesh(square);
         ctx->Pop();
 
-
-        //ctx->Rotate(Math::Pi<f32>() * 0.25f * time);
-        //ctx->TranslateX(x);
-        //pl->SetPosition(f32v2{x, 0.f});
-        ctx->TranslateY(-3.0);
-        ctx->ScaleY(0.2);
-        ctx->ScaleX(1.5f);
+        ctx->Push();
+        ctx->ScaleY(wallWidth);
+        ctx->ScaleX(bw);
+        ctx->TranslateY(-by);
         ctx->StaticMesh(square);
-        
+        ctx->Pop();
+
         // ctx->Scale(2.f);
         // ctx->Circle();
-        
     });
 }
 
@@ -179,8 +194,8 @@ template <typename F> void RunWindow(Onyx::Window *window, const F fun)
     while (!window->ShouldClose())
         if (ONYX_CHECK_EXPRESSION(window->AcquireNextImage(Onyx::Block)))
         {
-            fun();
             Onyx::Input::PollEvents();
+            fun();
 
             VKit::Queue *tqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Transfer);
             VKit::Queue *gqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Graphics);
