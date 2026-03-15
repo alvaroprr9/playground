@@ -23,7 +23,13 @@ void Run2(Onyx::Window *window)
     Onyx::PointLight<D2> *pl = ctx->AddPointLight();
 
     f32 y = 0.f;
+    f32 x = 0.f;
     f32 vy = 0.f;
+    f32 vx = 0.f;
+    f32 xx = 2.f;
+    f32 yy = 0.f;
+    f32 vxx = 2.f;
+    f32 vyy = 2.f;
     const f32 g = 1.f;
     TKit::Clock clock{};
     RunWindow(window, [&] {
@@ -31,12 +37,27 @@ void Run2(Onyx::Window *window)
         const TKit::Timespan elapsed = clock.Restart();
         const f32 dt = elapsed.AsSeconds();
 
+        const f32 dvx = 0.0f;
         const f32 dvy = -g * dt;
+        vx += dvx;
         vy += dvy;
 
+        const f32 dx = vx * dt;
         const f32 dy = vy * dt;
+        x += dx;
         y += dy;
-        
+
+        const f32 dvxx = 0.0f;
+        const f32 dvyy = -g * dt;
+        vxx += dvxx;
+        vyy += dvyy;
+
+        const f32 dxx = vxx * dt;
+        const f32 dyy = vyy * dt;
+        xx += dxx;
+        yy += dyy;
+        if (y <= -0.3f && vy < 0.f)
+            vy = -vy;
         if (y <= -0.3f && vy < 0.f)
             vy = -vy;
         
@@ -45,8 +66,19 @@ void Run2(Onyx::Window *window)
         ctx->FillColor(Onyx::Color::White);
         ctx->Scale(0.5f);
         ctx->TranslateY(y);
+        ctx->TranslateX(x);
         ctx->Circle();
         ctx->Pop();
+
+        ctx->Push();
+        ctx->FillColor(Onyx::Color::White);
+        ctx->Scale(0.5f);
+        ctx->TranslateY(yy);
+        ctx->TranslateX(xx);
+        ctx->Circle();
+        ctx->Pop();
+
+
 
 
         ctx->Push();
