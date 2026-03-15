@@ -25,11 +25,11 @@ void Run2(Onyx::Window *window)
     f32 y = 0.f;
     f32 x = 0.f;
     f32 vy = 0.f;
-    f32 vx = 0.f;
-    f32 xx = 2.f;
+    f32 vx = 1.f;
+   /* f32 xx = 2.f;
     f32 yy = 0.f;
     f32 vxx = 2.f;
-    f32 vyy = 2.f;
+    f32 vyy = 2.f;*/
     const f32 g = 1.f;
     TKit::Clock clock{};
     RunWindow(window, [&] {
@@ -47,7 +47,7 @@ void Run2(Onyx::Window *window)
         x += dx;
         y += dy;
 
-        const f32 dvxx = 0.0f;
+        /*const f32 dvxx = 0.0f;
         const f32 dvyy = -g * dt;
         vxx += dvxx;
         vyy += dvyy;
@@ -55,11 +55,12 @@ void Run2(Onyx::Window *window)
         const f32 dxx = vxx * dt;
         const f32 dyy = vyy * dt;
         xx += dxx;
-        yy += dyy;
-        if (y <= -0.3f && vy < 0.f)
+        yy += dyy;*/
+
+        if ((y <= -0.3f && vy < 0.f) || (y >= 0.3f && vy > 0.f))
             vy = -vy;
-        if (y <= -0.3f && vy < 0.f)
-            vy = -vy;
+        if ((x <= -0.3f && vx < 0.f) || (x>=0.3f && vx>0.f))
+            vx = -vx;
         
         //ctx->FillColor(Onyx::Color::Orange);
         ctx->Push();
@@ -70,16 +71,13 @@ void Run2(Onyx::Window *window)
         ctx->Circle();
         ctx->Pop();
 
-        ctx->Push();
+        /*ctx->Push();
         ctx->FillColor(Onyx::Color::White);
         ctx->Scale(0.5f);
         ctx->TranslateY(yy);
         ctx->TranslateX(xx);
         ctx->Circle();
-        ctx->Pop();
-
-
-
+        ctx->Pop();*/
 
         ctx->Push();
         ctx->TranslateY(+3.0);
