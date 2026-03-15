@@ -15,33 +15,74 @@ void Run2(Onyx::Window *window)
 {
     Onyx::RenderContext<D2> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D2>());
     const Onyx::StatMeshData<D2> data = Onyx::Assets::CreateSquareMesh<D2>();
-    const Onyx::Mesh square = Onyx::Assets::AddMesh(data);
+    const Onyx::Mesh square = Onyx::Assets::AddMesh(data); 
     ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
 
     window->CreateCamera<D2>();
     ctx->AddTarget(window);
     Onyx::PointLight<D2> *pl = ctx->AddPointLight();
 
-    f32 time = 0.f;
+    f32 y = 0.f;
+    f32 vy = 0.f;
+    const f32 g = 1.f;
     TKit::Clock clock{};
     RunWindow(window, [&] {
         ctx->Flush();
-        const f32 x = cosf(time);
+        const TKit::Timespan elapsed = clock.Restart();
+        const f32 dt = elapsed.AsSeconds();
 
-        ctx->FillColor(Onyx::Color::Orange);
+        const f32 dvy = -g * dt;
+        vy += dvy;
 
+        const f32 dy = vy * dt;
+        y += dy;
+        
+        if (y <= -0.3f && vy < 0.f)
+            vy = -vy;
+        
+        //ctx->FillColor(Onyx::Color::Orange);
         ctx->Push();
-        ctx->Rotate(Math::Pi<f32>() * 0.25f * time);
-        ctx->TranslateX(x);
-        pl->SetPosition(f32v2{x, 0.f});
-        ctx->StaticMesh(square);
-
+        ctx->FillColor(Onyx::Color::White);
+        ctx->Scale(0.5f);
+        ctx->TranslateY(y);
+        ctx->Circle();
         ctx->Pop();
 
+
+        ctx->Push();
+        ctx->TranslateY(+3.0);
+        ctx->ScaleY(0.2);
+        ctx->ScaleX(1.5f);
+        ctx->StaticMesh(square);
+        ctx->Pop();
+
+        ctx->Push();
+        ctx->TranslateX(+3.0);
+        ctx->ScaleX(0.2);
+        ctx->ScaleY(1.5f);
+        ctx->StaticMesh(square);
+        ctx->Pop();
+
+
+        ctx->Push();
+        ctx->TranslateX(-3.0);
+        ctx->ScaleX(0.2);
+        ctx->ScaleY(1.5f);
+        ctx->StaticMesh(square);
+        ctx->Pop();
+
+
+        //ctx->Rotate(Math::Pi<f32>() * 0.25f * time);
+        //ctx->TranslateX(x);
+        //pl->SetPosition(f32v2{x, 0.f});
+        ctx->TranslateY(-3.0);
+        ctx->ScaleY(0.2);
+        ctx->ScaleX(1.5f);
+        ctx->StaticMesh(square);
+        
         // ctx->Scale(2.f);
         // ctx->Circle();
-        const TKit::Timespan elapsed = clock.Restart();
-        time += elapsed.AsSeconds();
+        
     });
 }
 
