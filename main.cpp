@@ -9,6 +9,12 @@ template <typename F> void RunWindow(Onyx::Window *window, F fun);
 using Onyx::D2;
 using Onyx::D3;
 using namespace TKit::Alias;
+struct Particle
+{
+    f32 x, y;
+    f32 vx, vy;
+    f32 radius;
+};
 
 void Run2(Onyx::Window *window)
 {
@@ -25,12 +31,23 @@ void Run2(Onyx::Window *window)
     // f32v2 vec;
     // to access x -> vec[0];
     // to access y -> vec[1];
+    int N;
+    std::cout << "Numero de particulas: ";
+    std::cin >> N;
+    
+    std::vector<Particle> particles;
 
-    f32 y = 0.f;
-    f32 x = 0.f;
-    f32 vy = 0.f;
-    f32 vx = 1.f;
-    const f32 radius = 0.1f;
+    for (int i = 0; i < N; i++)
+    {
+        Particle p;
+        p.x = 0.f;
+        p.y = 0.f;
+        p.vx = (i % 2 == 0 ? 1.f : -1.f);
+        p.vy = 0.f;
+        p.radius = 0.08f;
+
+        particles.push_back(p);
+    }
 
     const f32 bw = 1.5f;
     const f32 bh = 1.5f;
@@ -55,48 +72,111 @@ void Run2(Onyx::Window *window)
         cam->ControlMovementWithUserInput(elapsed);
 
         const f32 dt = elapsed.AsSeconds();
+        for (auto &p : particles)
+        {
+            p.vy -= g * dt;
 
-        const f32 dvx = 0.0f;
-        const f32 dvy = -g * dt;
-        vx += dvx;
-        vy += dvy;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
 
-        const f32 dx = vx * dt;
-        const f32 dy = vy * dt;
-        x += dx;
-        y += dy;
+            const f32 bY = by - p.radius - 0.5f * wallWidth;
+            const f32 bX = bx - p.radius - 0.5f * wallWidth;
 
-        const f32 bY = by - radius - 0.5f * wallWidth;
-        const f32 bX = bx - radius - 0.5f * wallWidth;
-        if (y <= -bY && vy < 0.f)
-        {
-            y = -bY;
-            vy = -vy;
+            if (p.y <= -bY && p.vy < 0.f)
+            {
+                p.y = -bY;
+                p.vy = -p.vy;
+            }
+            if (p.y >= bY && p.vy > 0.f)
+            {
+                p.y = bY;
+                p.vy = -p.vy;
+            }
+            if (p.x <= -bX && p.vx < 0.f)
+            {
+                p.x = -bX;
+                p.vx = -p.vx;
+            }
+            if (p.x >= bX && p.vx > 0.f)
+            {
+                p.x = bX;
+                p.vx = -p.vx;
+            }
         }
-        if (y >= bY && vy > 0.f)
+
+        const f32 e = 1.0f; // elasticidad
+
+        for (size_t i = 0; i < particles.size(); i++)
         {
-            y = bY;
-            vy = -vy;
-        }
-        if (x <= -bX && vx < 0.f)
-        {
-            x = -bX;
-            vx = -vx;
-        }
-        if (x >= bX && vx > 0.f)
-        {
-            x = bX;
-            vx = -vx;
+            for (size_t j = i + 1; j < particles.size(); j++)
+            {
+                Particle &a = particles[i];
+                Particle &b = particles[j];
+
+                f32 dx = b.x - a.x;
+                f32 dy = b.y - a.y;
+
+                f32 dist2 = dx * dx + dy * dy;
+                f32 minDist = a.radius + b.radius;
+
+                if (dist2 <= minDist * minDist)
+                {
+                    f32 dist = sqrt(dist2);
+                    if (dist == 0.f)
+                        continue;
+
+                    // normal
+                    f32 nx = dx / dist;
+                    f32 ny = dy / dist;
+
+                    // velocidad relativa
+                    f32 rvx = b.vx - a.vx;
+                    f32 rvy = b.vy - a.vy;
+
+                    // velocidad en la normal
+                    f32 velAlongNormal = rvx * nx + rvy * ny;
+
+                    if (velAlongNormal > 0)
+                        continue;
+
+                    // impulso
+                    f32 jImpulse = -(1 + e) * velAlongNormal;
+                    jImpulse /= 2.0f; // masas iguales
+
+                    f32 impulseX = jImpulse * nx;
+                    f32 impulseY = jImpulse * ny;
+
+                    a.vx -= impulseX;
+                    a.vy -= impulseY;
+
+                    b.vx += impulseX;
+                    b.vy += impulseY;
+
+                    // corrección de penetración
+                    f32 penetration = minDist - dist;
+                    f32 correction = penetration * 0.5f;
+
+                    a.x -= correction * nx;
+                    a.y -= correction * ny;
+
+                    b.x += correction * nx;
+                    b.y += correction * ny;
+                }
+            }
         }
 
         // ctx->FillColor(Onyx::Color::Orange);
-        ctx->Push();
-        ctx->FillColor(Onyx::Color::White);
-        ctx->Scale(2.f * radius);
-        ctx->TranslateY(y);
-        ctx->TranslateX(x);
-        ctx->Circle();
-        ctx->Pop();
+        for (auto &p : particles)
+        {
+            ctx->Push();
+            ctx->FillColor(Onyx::Color::White);
+            ctx->Scale(2.f * p.radius);
+            ctx->TranslateX(p.x);
+            ctx->TranslateY(p.y);
+            ctx->Circle();
+            ctx->Pop();
+        }
+
 
         ctx->Push();
         ctx->ScaleY(wallWidth);
