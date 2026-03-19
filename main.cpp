@@ -3,12 +3,14 @@
 #include "onyx/asset/assets.hpp"
 #include "onyx/execution/execution.hpp"
 #include "onyx/rendering/context.hpp"
+#include "tkit/container/stack_array.hpp"
 
 template <typename F> void RunWindow(Onyx::Window *window, F fun);
 
 using Onyx::D2;
 using Onyx::D3;
 using namespace TKit::Alias;
+namespace Math = Onyx::Math;
 struct Particle
 {
     f32 x, y;
@@ -31,13 +33,20 @@ void Run2(Onyx::Window *window)
     // f32v2 vec;
     // to access x -> vec[0];
     // to access y -> vec[1];
-    int N;
+
+    // tarea: que cada particula tenga su masa. que la masa se represente visualmente con el radio
+    // tarea: que, cuando lleve el mouse a una particula y cliquee, la pueda "controlar"
+    // tarea: usar f32v2 para la posicion y velocidad. cambiar las mates para que sean mates "vectoriales"
+    // tarea: probar a hacer algo parecido en la funcion 3D
+
+    u32 N;
     std::cout << "Numero de particulas: ";
     std::cin >> N;
-    
-    std::vector<Particle> particles;
 
-    for (int i = 0; i < N; i++)
+    TKit::StackArray<Particle> particles;
+    particles.Reserve(N);
+
+    for (u32 i = 0; i < N; i++)
     {
         Particle p;
         p.x = 0.f;
@@ -46,7 +55,7 @@ void Run2(Onyx::Window *window)
         p.vy = (rand() % 200 - 100) / 100.f;
         p.radius = 0.08f;
 
-        particles.push_back(p);
+        particles.Append(p);
     }
 
     const f32 bw = 1.5f;
@@ -71,8 +80,12 @@ void Run2(Onyx::Window *window)
         const TKit::Timespan elapsed = clock.Restart();
         cam->ControlMovementWithUserInput(elapsed);
 
+        // const f32v2 mpos = cam->GetWorldMousePosition();
+        // Onyx::Input::IsKeyPressed(window, ...); a key is: Onyx::Input::Key_LeftShift
+        // Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
+
         const f32 dt = elapsed.AsSeconds();
-        for (auto &p : particles)
+        for (Particle &p : particles)
         {
             p.vy -= g * dt;
 
@@ -106,45 +119,45 @@ void Run2(Onyx::Window *window)
 
         const f32 e = 1.0f; // elasticidad
 
-        for (size_t i = 0; i < particles.size(); i++)
+        for (u32 i = 0; i < particles.GetSize(); i++)
         {
-            for (size_t j = i + 1; j < particles.size(); j++)
+            for (u32 j = i + 1; j < particles.GetSize(); j++)
             {
                 Particle &a = particles[i];
                 Particle &b = particles[j];
 
-                f32 dx = b.x - a.x;
-                f32 dy = b.y - a.y;
+                const f32 dx = b.x - a.x;
+                const f32 dy = b.y - a.y;
 
-                f32 dist2 = dx * dx + dy * dy;
-                f32 minDist = a.radius + b.radius;
+                const f32 dist2 = dx * dx + dy * dy;
+                const f32 minDist = a.radius + b.radius;
 
                 if (dist2 <= minDist * minDist)
                 {
-                    f32 dist = sqrt(dist2);
+                    const f32 dist = sqrt(dist2);
                     if (dist == 0.f)
                         continue;
 
                     // normal
-                    f32 nx = dx / dist;
-                    f32 ny = dy / dist;
+                    const f32 nx = dx / dist;
+                    const f32 ny = dy / dist;
 
                     // velocidad relativa
-                    f32 rvx = b.vx - a.vx;
-                    f32 rvy = b.vy - a.vy;
+                    const f32 rvx = b.vx - a.vx;
+                    const f32 rvy = b.vy - a.vy;
 
                     // velocidad en la normal
-                    f32 velAlongNormal = rvx * nx + rvy * ny;
+                    const f32 velAlongNormal = rvx * nx + rvy * ny;
 
                     if (velAlongNormal > 0)
                         continue;
 
                     // impulso
-                    f32 jImpulse = -(1 + e) * velAlongNormal; // (-(1 + e) * velAlongNormal)/[1/ma +1/mb]
-                    jImpulse /= 2.0f; // masas iguales
+                    const f32 jImpulse = -0.5f * (1 + e) * velAlongNormal; // (-(1 + e) * velAlongNormal)/[1/ma +1/mb]
+                                                                           // masas iguales
 
-                    f32 impulseX = jImpulse * nx;
-                    f32 impulseY = jImpulse * ny;
+                    const f32 impulseX = jImpulse * nx;
+                    const f32 impulseY = jImpulse * ny;
 
                     a.vx -= impulseX;
                     a.vy -= impulseY;
@@ -153,8 +166,8 @@ void Run2(Onyx::Window *window)
                     b.vy += impulseY;
 
                     // corrección de penetración
-                    f32 penetration = minDist - dist; 
-                    f32 correction = penetration * 0.5f;
+                    const f32 penetration = minDist - dist;
+                    const f32 correction = penetration * 0.5f;
 
                     a.x -= correction * nx;
                     a.y -= correction * ny;
@@ -176,7 +189,6 @@ void Run2(Onyx::Window *window)
             ctx->Circle();
             ctx->Pop();
         }
-
 
         ctx->Push();
         ctx->ScaleY(wallWidth);
