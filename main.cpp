@@ -42,8 +42,8 @@ void Run2(Onyx::Window *window)
         Particle p;
         p.x = 0.f;
         p.y = 0.f;
-        p.vx = (i % 2 == 0 ? 1.f : -1.f);
-        p.vy = 0.f;
+        p.vx = (rand() % 200 - 100) / 100.f; // entre -1 y 1
+        p.vy = (rand() % 200 - 100) / 100.f;
         p.radius = 0.08f;
 
         particles.push_back(p);
@@ -140,7 +140,7 @@ void Run2(Onyx::Window *window)
                         continue;
 
                     // impulso
-                    f32 jImpulse = -(1 + e) * velAlongNormal;
+                    f32 jImpulse = -(1 + e) * velAlongNormal; // (-(1 + e) * velAlongNormal)/[1/ma +1/mb]
                     jImpulse /= 2.0f; // masas iguales
 
                     f32 impulseX = jImpulse * nx;
@@ -153,7 +153,7 @@ void Run2(Onyx::Window *window)
                     b.vy += impulseY;
 
                     // corrección de penetración
-                    f32 penetration = minDist - dist;
+                    f32 penetration = minDist - dist; 
                     f32 correction = penetration * 0.5f;
 
                     a.x -= correction * nx;
