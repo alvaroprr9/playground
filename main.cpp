@@ -11,14 +11,6 @@ using Onyx::D2;
 using Onyx::D3;
 using namespace TKit::Alias;
 namespace Math = Onyx::Math;
-inline f32 dot(const f32v2 &a, const f32v2 &b)
-{
-    return a[0] * b[0] + a[1] * b[1];
-}
-inline f32 dot(const f32v3 &a, const f32v3 &b)
-{
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
 
 struct Particle2D
 {
@@ -126,8 +118,8 @@ void Run2(Onyx::Window *window)
                 Particle2D &b = particles[j];
 
                 f32v2 delta = b.pos - a.pos;
-                f32 dist2 = dot(delta, delta);
-                f32 minDist = a.radius + b.radius;
+                const f32 dist2 = Math::Dot(delta, delta);
+                const f32 minDist = a.radius + b.radius;
 
                 if (dist2 <= minDist * minDist)
                 {
@@ -135,9 +127,9 @@ void Run2(Onyx::Window *window)
                     if (dist == 0.f)
                         continue;
 
-                    f32v2 n = delta / dist;
-                    f32v2 rv = b.vel - a.vel;
-                    f32 velAlongNormal = dot(rv, n);
+                    const f32v2 n = delta / dist;
+                    const f32v2 rv = b.vel - a.vel;
+                    const f32 velAlongNormal = Math::Dot(rv, n);
 
                     if (velAlongNormal > 0)
                         continue;
@@ -249,8 +241,8 @@ void Run3(Onyx::Window *window)
             p.vel[1] -= g * dt; // gravedad en Y
             p.pos += p.vel * dt;
 
-            //colisiones con marcos
-            for (int axis = 0; axis < 3; axis++)
+            // colisiones con marcos
+            for (u32 axis = 0; axis < 3; axis++)
             {
                 if (p.pos[axis] <= -bounds[axis] + p.radius && p.vel[axis] < 0.f)
                 {
@@ -275,32 +267,32 @@ void Run3(Onyx::Window *window)
                 auto &a = particles[i];
                 auto &b = particles[j];
 
-                f32v3 delta = b.pos - a.pos;
-                f32 dist2 = dot(delta, delta);
-                f32 minDist = a.radius + b.radius;
+                const f32v3 delta = b.pos - a.pos;
+                const f32 dist2 = Math::Dot(delta, delta);
+                const f32 minDist = a.radius + b.radius;
 
                 if (dist2 <= minDist * minDist)
                 {
-                    f32 dist = sqrt(dist2);
+                    const f32 dist = sqrt(dist2);
                     if (dist == 0.f)
                         continue;
 
-                    f32v3 n = delta / dist;
-                    f32v3 rv = b.vel - a.vel;
+                    const f32v3 n = delta / dist;
+                    const f32v3 rv = b.vel - a.vel;
 
-                    f32 velAlongNormal = dot(rv, n);
+                    const f32 velAlongNormal = Math::Dot(rv, n);
                     if (velAlongNormal > 0)
                         continue;
 
-                    f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
-                    f32v3 impulse = jImpulse * n;
+                    const f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
+                    const f32v3 impulse = jImpulse * n;
 
                     a.vel -= impulse / a.mass;
                     b.vel += impulse / b.mass;
 
                     // corrección de penetración
-                    f32 penetration = minDist - dist;
-                    f32v3 correction = n * (penetration * 0.5f);
+                    const f32 penetration = minDist - dist;
+                    const f32v3 correction = n * (penetration * 0.5f);
 
                     a.pos -= correction;
                     b.pos += correction;
