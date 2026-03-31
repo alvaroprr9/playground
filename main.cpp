@@ -12,7 +12,7 @@ using Onyx::D3;
 using namespace TKit::Alias;
 namespace Math = Onyx::Math;
 
-//Math::Dot
+// Math::Dot
 struct Particle2D
 {
     f32v2 pos;
@@ -29,6 +29,14 @@ struct Particle3D
     f32 radius;
 };
 
+enum MouseBehaviour : u8
+{
+    MouseBehaviour_Grab,    // option 4
+    MouseBehaviour_Ball,    // option 1
+    MouseBehaviour_Enclose, // option 2
+    MouseBehaviour_Attract, // option 3
+};
+
 void Run2(Onyx::Window *window)
 {
     Onyx::RenderContext<D2> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D2>());
@@ -40,10 +48,10 @@ void Run2(Onyx::Window *window)
     ctx->AddTarget(window);
     ctx->AddPointLight();
 
-    u32 N;
-    std::cout << "Numero de particulas: ";
-    std::cin >> N;
+    const MouseBehaviour mb = MouseBehaviour_Grab;
+    const f32 mouseOutline = 0.01f;
 
+    const u32 N = 10;
     TKit::StackArray<Particle2D> particles;
     particles.Reserve(N);
 
@@ -67,18 +75,34 @@ void Run2(Onyx::Window *window)
 
     RunWindow(window, [&] {
         for (const Onyx::Event &event : window->GetNewEvents())
-        {
             if (event.Type == Onyx::Event_Scrolled)
             {
                 const f32 factor = Onyx::Input::IsKeyPressed(window, Onyx::Input::Key_LeftShift) ? 0.05f : 0.005f;
                 cam->ControlScrollWithUserInput(factor * event.ScrollOffset[1]);
             }
-        }
         window->FlushEvents();
 
         ctx->Flush();
         const TKit::Timespan elapsed = clock.Restart();
         cam->ControlMovementWithUserInput(elapsed);
+
+        if (Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1))
+        {
+            // tell gpt to do this as a switch as well
+            // if (mb == MouseBehaviour_Grab)
+            // {}
+            // else if (mb ==)
+
+            ctx->Push();
+            const f32v2 mpos = cam->GetWorldMousePosition();
+            ctx->Outline(true);
+            ctx->Fill(false);
+            ctx->OutlineWidth(mouseOutline);
+            ctx->OutlineColor(Onyx::Color::Orange);
+            ctx->Translate(mpos);
+            ctx->Circle();
+            ctx->Pop();
+        }
 
         const f32 dt = elapsed.AsSeconds();
 
@@ -87,32 +111,25 @@ void Run2(Onyx::Window *window)
             p.vel[1] -= g * dt;
             p.pos += p.vel * dt;
 
-            if (p.pos[1] <= -bounds[1] + p.radius && p.vel[1] < 0.f)
+            for (u32 axis = 0; axis < 2; ++axis)
             {
-                p.pos[1] = -bounds[1] + p.radius;
-                p.vel[1] *= -1.f;
-            }
-            if (p.pos[1] >= bounds[1] - p.radius && p.vel[1] > 0.f)
-            {
-                p.pos[1] = bounds[1] - p.radius;
-                p.vel[1] *= -1.f;
-            }
-            if (p.pos[0] <= -bounds[0] + p.radius && p.vel[0] < 0.f)
-            {
-                p.pos[0] = -bounds[0] + p.radius;
-                p.vel[0] *= -1.f;
-            }
-            if (p.pos[0] >= bounds[0] - p.radius && p.vel[0] > 0.f)
-            {
-                p.pos[0] = bounds[0] - p.radius;
-                p.vel[0] *= -1.f;
+                const f32 edge = bounds[axis] - 0.5f * wallWidth - p.radius;
+                if (p.pos[axis] <= -edge && p.vel[axis] < 0.f)
+                {
+                    p.pos[axis] = -edge;
+                    p.vel[axis] *= -1.f;
+                }
+                if (p.pos[axis] >= edge && p.vel[axis] > 0.f)
+                {
+                    p.pos[axis] = edge;
+                    p.vel[axis] *= -1.f;
+                }
             }
         }
 
         const f32 e = 1.0f;
 
         for (u32 i = 0; i < particles.GetSize(); i++)
-        {
             for (u32 j = i + 1; j < particles.GetSize(); j++)
             {
                 Particle2D &a = particles[i];
@@ -148,7 +165,6 @@ void Run2(Onyx::Window *window)
                     b.pos += correction;
                 }
             }
-        }
 
         for (auto &p : particles)
         {
