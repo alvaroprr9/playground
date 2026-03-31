@@ -12,6 +12,7 @@ using Onyx::D3;
 using namespace TKit::Alias;
 namespace Math = Onyx::Math;
 
+//Math::Dot
 struct Particle2D
 {
     f32v2 pos;
