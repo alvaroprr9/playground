@@ -101,7 +101,6 @@ void Run2(Onyx::Window *window)
         const bool mouseDown = Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
         const f32v2 mpos = cam->GetWorldMousePosition();
 
-
         for (auto &p : particles)
         {
             p.vel[1] -= g * dt;
