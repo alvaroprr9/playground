@@ -8,11 +8,9 @@
 template <typename F> void RunWindow(Onyx::Window *window, F fun);
 
 using Onyx::D2;
-using Onyx::D3;
 using namespace TKit::Alias;
 namespace Math = Onyx::Math;
 
-// Math::Dot
 struct Particle2D
 {
     f32v2 pos;
@@ -21,20 +19,12 @@ struct Particle2D
     f32 radius;
 };
 
-struct Particle3D
-{
-    f32v3 pos;
-    f32v3 vel;
-    f32 mass;
-    f32 radius;
-};
-
 enum MouseBehaviour : u8
 {
-    MouseBehaviour_Grab,    // option 4
-    MouseBehaviour_Ball,    // option 1
-    MouseBehaviour_Enclose, // option 2
-    MouseBehaviour_Attract, // option 3
+    MouseBehaviour_Grab,
+    MouseBehaviour_Ball,
+    MouseBehaviour_Enclose,
+    MouseBehaviour_Attract,
 };
 
 void Run2(Onyx::Window *window)
@@ -48,7 +38,35 @@ void Run2(Onyx::Window *window)
     ctx->AddTarget(window);
     ctx->AddPointLight();
 
-    const MouseBehaviour mb = MouseBehaviour_Grab;
+    // ?? INPUT
+    MouseBehaviour mb;
+
+    std::cout << "Elige comportamiento del mouse:\n";
+    std::cout << "1 -> Ball (colisiones)\n";
+    std::cout << "2 -> Enclose (encierra)\n";
+    std::cout << "3 -> Attract (gravedad)\n";
+    std::cout << "4 -> Grab (visual)\n";
+
+    int option;
+    std::cin >> option;
+
+    switch (option)
+    {
+    case 1:
+        mb = MouseBehaviour_Ball;
+        break;
+    case 2:
+        mb = MouseBehaviour_Enclose;
+        break;
+    case 3:
+        mb = MouseBehaviour_Attract;
+        break;
+    default:
+        mb = MouseBehaviour_Grab;
+        break;
+    }
+
+    const f32 mouseRadius = 0.15f;
     const f32 mouseOutline = 0.01f;
 
     const u32 N = 10;
@@ -74,39 +92,17 @@ void Run2(Onyx::Window *window)
     TKit::Clock clock{};
 
     RunWindow(window, [&] {
-        for (const Onyx::Event &event : window->GetNewEvents())
-            if (event.Type == Onyx::Event_Scrolled)
-            {
-                const f32 factor = Onyx::Input::IsKeyPressed(window, Onyx::Input::Key_LeftShift) ? 0.05f : 0.005f;
-                cam->ControlScrollWithUserInput(factor * event.ScrollOffset[1]);
-            }
-        window->FlushEvents();
-
         ctx->Flush();
         const TKit::Timespan elapsed = clock.Restart();
         cam->ControlMovementWithUserInput(elapsed);
 
-        if (Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1))
-        {
-            // tell gpt to do this as a switch as well
-            // if (mb == MouseBehaviour_Grab)
-            // {}
-            // else if (mb ==)
-
-            ctx->Push();
-            const f32v2 mpos = cam->GetWorldMousePosition();
-            ctx->Outline(true);
-            ctx->Fill(false);
-            ctx->OutlineWidth(mouseOutline);
-            ctx->OutlineColor(Onyx::Color::Orange);
-            ctx->Translate(mpos);
-            ctx->Circle();
-            ctx->Pop();
-        }
-
         const f32 dt = elapsed.AsSeconds();
 
-        for (Particle2D &p : particles)
+        const bool mouseDown = Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
+        const f32v2 mpos = cam->GetWorldMousePosition();
+
+
+        for (auto &p : particles)
         {
             p.vel[1] -= g * dt;
             p.pos += p.vel * dt;
@@ -114,6 +110,7 @@ void Run2(Onyx::Window *window)
             for (u32 axis = 0; axis < 2; ++axis)
             {
                 const f32 edge = bounds[axis] - 0.5f * wallWidth - p.radius;
+
                 if (p.pos[axis] <= -edge && p.vel[axis] < 0.f)
                 {
                     p.pos[axis] = -edge;
@@ -127,39 +124,114 @@ void Run2(Onyx::Window *window)
             }
         }
 
+        if (mouseDown)
+        {
+            switch (mb)
+            {
+            case MouseBehaviour_Ball: {
+                for (auto &p : particles)
+                {
+                    f32v2 delta = p.pos - mpos;
+                    f32 dist2 = Math::Dot(delta, delta);
+                    f32 minDist = p.radius + mouseRadius;
+
+                    if (dist2 <= minDist * minDist)
+                    {
+                        f32 dist = sqrt(dist2);
+                        if (dist == 0.f)
+                            continue;
+
+                        f32v2 n = delta / dist;
+
+                        p.pos = mpos + n * minDist;
+
+                        f32 v = Math::Dot(p.vel, n);
+                        if (v < 0)
+                            p.vel -= (1.5f * v) * n;
+                    }
+                }
+            }
+            break;
+
+            case MouseBehaviour_Enclose: {
+                for (auto &p : particles)
+                {
+                    f32v2 delta = p.pos - mpos;
+                    f32 dist = sqrt(Math::Dot(delta, delta));
+
+                    if (dist > mouseRadius - p.radius)
+                    {
+                        f32v2 n = delta / dist;
+
+                        p.pos = mpos + n * (mouseRadius - p.radius);
+
+                        f32 v = Math::Dot(p.vel, n);
+                        if (v > 0)
+                            p.vel -= v * n;
+                    }
+                }
+            }
+            break;
+
+            case MouseBehaviour_Attract: {
+                const f32 G = 2.0f;
+
+                for (auto &p : particles)
+                {
+                    f32v2 delta = mpos - p.pos;
+                    f32 dist2 = Math::Dot(delta, delta);
+
+                    if (dist2 < 0.0001f)
+                        continue;
+
+                    f32v2 dir = delta / sqrt(dist2);
+
+                    f32 force = G / dist2;
+                    if (force > 50.f)
+                        force = 50.f;
+
+                    p.vel += dir * force * dt;
+                }
+            }
+            break;
+
+            default:
+                break;
+            }
+        }
         const f32 e = 1.0f;
 
         for (u32 i = 0; i < particles.GetSize(); i++)
             for (u32 j = i + 1; j < particles.GetSize(); j++)
             {
-                Particle2D &a = particles[i];
-                Particle2D &b = particles[j];
+                auto &a = particles[i];
+                auto &b = particles[j];
 
                 f32v2 delta = b.pos - a.pos;
-                const f32 dist2 = Math::Dot(delta, delta);
-                const f32 minDist = a.radius + b.radius;
+                f32 dist2 = Math::Dot(delta, delta);
+                f32 minDist = a.radius + b.radius;
 
                 if (dist2 <= minDist * minDist)
                 {
-                    const f32 dist = sqrt(dist2);
+                    f32 dist = sqrt(dist2);
                     if (dist == 0.f)
                         continue;
 
-                    const f32v2 n = delta / dist;
-                    const f32v2 rv = b.vel - a.vel;
-                    const f32 velAlongNormal = Math::Dot(rv, n);
+                    f32v2 n = delta / dist;
+                    f32v2 rv = b.vel - a.vel;
 
+                    f32 velAlongNormal = Math::Dot(rv, n);
                     if (velAlongNormal > 0)
                         continue;
 
-                    const f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
-                    const f32v2 impulse = jImpulse * n;
+                    f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
+                    f32v2 impulse = jImpulse * n;
 
                     a.vel -= impulse / a.mass;
                     b.vel += impulse / b.mass;
 
-                    const f32 penetration = minDist - dist;
-                    const f32v2 correction = n * (penetration * 0.5f);
+                    f32 penetration = minDist - dist;
+                    f32v2 correction = n * (penetration * 0.5f);
 
                     a.pos -= correction;
                     b.pos += correction;
@@ -171,8 +243,25 @@ void Run2(Onyx::Window *window)
             ctx->Push();
             ctx->FillColor(Onyx::Color::White);
             ctx->Scale(2.f * p.radius);
-            ctx->TranslateX(p.pos[0]);
-            ctx->TranslateY(p.pos[1]);
+            ctx->Translate(p.pos);
+            ctx->Circle();
+            ctx->Pop();
+        }
+
+        if (mouseDown)
+        {
+            ctx->Push();
+
+            if (mb == MouseBehaviour_Ball)
+                ctx->FillColor(Onyx::Color::Orange);
+            else
+            {
+                ctx->Outline(true);
+                ctx->Fill(false);
+            }
+
+            ctx->Scale(mouseRadius * 2.f);
+            ctx->Translate(mpos);
             ctx->Circle();
             ctx->Pop();
         }
@@ -204,127 +293,6 @@ void Run2(Onyx::Window *window)
         ctx->TranslateY(-bounds[1]);
         ctx->StaticMesh(square);
         ctx->Pop();
-    });
-}
-
-void Run3(Onyx::Window *window)
-{
-    Onyx::RenderContext<D3> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D3>());
-
-    const Onyx::StatMeshData<D3> sdata = Onyx::Assets::CreateSphereMesh(16, 32);
-    const Onyx::Mesh sphere = Onyx::Assets::AddMesh(sdata);
-
-    ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
-
-    Onyx::Camera<D3> *cam = window->CreateCamera<D3>();
-    ctx->AddTarget(window);
-    cam->SetPerspectiveProjection();
-
-    ctx->AddDirectionalLight();
-
-    u32 N;
-    std::cout << "Numero de particulas: ";
-    std::cin >> N;
-
-    TKit::StackArray<Particle3D> particles;
-    particles.Reserve(N);
-
-    for (u32 i = 0; i < N; i++)
-    {
-        Particle3D p;
-        p.pos = f32v3{0.f, 0.f, 0.f};
-        p.vel = f32v3{(rand() % 200 - 100) / 100.f, (rand() % 200 - 100) / 100.f, (rand() % 200 - 100) / 100.f};
-        p.mass = (rand() % 100 + 50) / 100.f;
-        p.radius = 0.05f + 0.01f * p.mass;
-
-        particles.Append(p);
-    }
-
-    const f32v3 bounds = f32v3{0.75f, 0.75f, 0.75f};
-    const f32 g = 1.f;
-
-    TKit::Clock clock{};
-
-    RunWindow(window, [&] {
-        ctx->Flush();
-        const TKit::Timespan elapsed = clock.Restart();
-        cam->ControlMovementWithUserInput(elapsed);
-
-        const f32 dt = elapsed.AsSeconds();
-
-        // movimiento
-        for (auto &p : particles)
-        {
-            p.vel[1] -= g * dt; // gravedad en Y
-            p.pos += p.vel * dt;
-
-            // colisiones con marcos
-            for (u32 axis = 0; axis < 3; axis++)
-            {
-                if (p.pos[axis] <= -bounds[axis] + p.radius && p.vel[axis] < 0.f)
-                {
-                    p.pos[axis] = -bounds[axis] + p.radius;
-                    p.vel[axis] *= -1.f;
-                }
-                if (p.pos[axis] >= bounds[axis] - p.radius && p.vel[axis] > 0.f)
-                {
-                    p.pos[axis] = bounds[axis] - p.radius;
-                    p.vel[axis] *= -1.f;
-                }
-            }
-        }
-
-        // colisiones entre ellas
-        const f32 e = 1.0f;
-
-        for (u32 i = 0; i < particles.GetSize(); i++)
-        {
-            for (u32 j = i + 1; j < particles.GetSize(); j++)
-            {
-                auto &a = particles[i];
-                auto &b = particles[j];
-
-                const f32v3 delta = b.pos - a.pos;
-                const f32 dist2 = Math::Dot(delta, delta);
-                const f32 minDist = a.radius + b.radius;
-
-                if (dist2 <= minDist * minDist)
-                {
-                    const f32 dist = sqrt(dist2);
-                    if (dist == 0.f)
-                        continue;
-
-                    const f32v3 n = delta / dist;
-                    const f32v3 rv = b.vel - a.vel;
-
-                    const f32 velAlongNormal = Math::Dot(rv, n);
-                    if (velAlongNormal > 0)
-                        continue;
-
-                    const f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
-                    const f32v3 impulse = jImpulse * n;
-
-                    a.vel -= impulse / a.mass;
-                    b.vel += impulse / b.mass;
-
-                    // corrección de penetración
-                    const f32 penetration = minDist - dist;
-                    const f32v3 correction = n * (penetration * 0.5f);
-
-                    a.pos -= correction;
-                    b.pos += correction;
-                }
-            }
-        }
-
-        for (auto &p : particles)
-        {
-            ctx->Push();
-            ctx->Scale(p.radius * 2.f);
-            ctx->SetTranslation(p.pos);
-            ctx->StaticMesh(sphere);
-            ctx->Pop();
-        }
     });
 }
 
