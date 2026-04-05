@@ -8,6 +8,7 @@
 template <typename F> void RunWindow(Onyx::Window *window, F fun);
 
 using Onyx::D2;
+using Onyx::D3;
 using namespace TKit::Alias;
 namespace Math = Onyx::Math;
 
@@ -295,6 +296,145 @@ void Run2(Onyx::Window *window)
     });
 }
 
+struct Particle3D
+{
+    f32v3 pos;
+    f32v3 vel;
+    f32 mass;
+    f32 radius;
+};
+
+// use ctx->Line() to draw lines and draw the shape of the bounds
+void Run3(Onyx::Window *window)
+{
+    Onyx::RenderContext<D3> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D3>());
+
+    const Onyx::StatMeshData<D3> sdata = Onyx::Assets::CreateSphereMesh(16, 32);
+    const Onyx::StatMeshData<D3> cdata = Onyx::Assets::CreateCylinderMesh(32);
+
+    const Onyx::Mesh cube = Onyx::Assets::AddMesh(cdata);
+    const Onyx::Mesh sphere = Onyx::Assets::AddMesh(sdata);
+
+    Onyx::MaterialData<D3> matData{};
+    const Onyx::Material mat = Onyx::Assets::AddMaterial(matData);
+
+    ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
+
+    Onyx::Camera<D3> *cam = window->CreateCamera<D3>();
+    ctx->AddTarget(window);
+    cam->SetPerspectiveProjection();
+
+    ctx->AddDirectionalLight(f32v3{1.f}, 0.8f);
+
+    u32 N;
+    std::cout << "Numero de particulas: ";
+    std::cin >> N;
+
+    TKit::StackArray<Particle3D> particles;
+    particles.Reserve(N);
+
+    for (u32 i = 0; i < N; i++)
+    {
+        Particle3D p;
+        p.pos = f32v3{0.f, 0.f, 0.f};
+        p.vel = f32v3{(rand() % 200 - 100) / 100.f, (rand() % 200 - 100) / 100.f, (rand() % 200 - 100) / 100.f};
+        p.mass = (rand() % 100 + 50) / 100.f;
+        p.radius = 0.05f + 0.01f * p.mass;
+
+        particles.Append(p);
+    }
+
+    const f32v3 bounds = f32v3{0.75f, 0.75f, 0.75f};
+    const f32 g = 1.f;
+
+    TKit::Clock clock{};
+
+    RunWindow(window, [&] {
+        ctx->Flush();
+        ctx->Material(mat);
+        const TKit::Timespan elapsed = clock.Restart();
+        cam->ControlMovementWithUserInput(elapsed);
+
+        ctx->Line(cube, f32v3{0.f}, f32v3{1.f, 0.f, 0.f});
+
+        const f32 dt = elapsed.AsSeconds();
+
+        // movimiento
+        for (auto &p : particles)
+        {
+            p.vel[1] -= g * dt; // gravedad en Y
+            p.pos += p.vel * dt;
+
+            // colisiones con marcos
+            for (u32 axis = 0; axis < 3; axis++)
+            {
+                if (p.pos[axis] <= -bounds[axis] + p.radius && p.vel[axis] < 0.f)
+                {
+                    p.pos[axis] = -bounds[axis] + p.radius;
+                    p.vel[axis] *= -1.f;
+                }
+                if (p.pos[axis] >= bounds[axis] - p.radius && p.vel[axis] > 0.f)
+                {
+                    p.pos[axis] = bounds[axis] - p.radius;
+                    p.vel[axis] *= -1.f;
+                }
+            }
+        }
+
+        // colisiones entre ellas
+        const f32 e = 1.0f;
+
+        for (u32 i = 0; i < particles.GetSize(); i++)
+        {
+            for (u32 j = i + 1; j < particles.GetSize(); j++)
+            {
+                auto &a = particles[i];
+                auto &b = particles[j];
+
+                const f32v3 delta = b.pos - a.pos;
+                const f32 dist2 = Math::Dot(delta, delta);
+                const f32 minDist = a.radius + b.radius;
+
+                if (dist2 <= minDist * minDist)
+                {
+                    const f32 dist = sqrt(dist2);
+                    if (dist == 0.f)
+                        continue;
+
+                    const f32v3 n = delta / dist;
+                    const f32v3 rv = b.vel - a.vel;
+
+                    const f32 velAlongNormal = Math::Dot(rv, n);
+                    if (velAlongNormal > 0)
+                        continue;
+
+                    const f32 jImpulse = -(1 + e) * velAlongNormal / (1.f / a.mass + 1.f / b.mass);
+                    const f32v3 impulse = jImpulse * n;
+
+                    a.vel -= impulse / a.mass;
+                    b.vel += impulse / b.mass;
+
+                    // corrección de penetración
+                    const f32 penetration = minDist - dist;
+                    const f32v3 correction = n * (penetration * 0.5f);
+
+                    a.pos -= correction;
+                    b.pos += correction;
+                }
+            }
+        }
+
+        for (auto &p : particles)
+        {
+            ctx->Push();
+            ctx->Scale(p.radius * 2.f);
+            ctx->SetTranslation(p.pos);
+            ctx->StaticMesh(sphere);
+            ctx->Pop();
+        }
+    });
+}
+
 int main()
 {
     ONYX_CHECK_EXPRESSION(Onyx::Initialize());
@@ -304,7 +444,7 @@ int main()
 
     Onyx::Window *window = ONYX_CHECK_EXPRESSION(Onyx::Platform::CreateWindow(spc));
 
-    Run2(window);
+    Run3(window);
 
     Onyx::Terminate();
 }
@@ -316,6 +456,7 @@ template <typename F> void RunWindow(Onyx::Window *window, const F fun)
         {
             Onyx::Input::PollEvents();
             fun();
+            window->FlushEvents();
 
             VKit::Queue *tqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Transfer);
             VKit::Queue *gqueue = Onyx::Execution::FindSuitableQueue(VKit::Queue_Graphics);
