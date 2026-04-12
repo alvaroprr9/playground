@@ -28,27 +28,11 @@ enum MouseBehaviour : u8
     MouseBehaviour_Attract,
 };
 
-void Run2(Onyx::Window *window)
+MouseBehaviour ChooseBehaviour()
 {
-    Onyx::RenderContext<D2> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D2>());
-    const Onyx::StatMeshData<D2> data = Onyx::Assets::CreateSquareMesh<D2>();
-    const Onyx::Mesh square = Onyx::Assets::AddMesh(data);
-    ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
-
-    Onyx::Camera<D2> *cam = window->CreateCamera<D2>();
-    ctx->AddTarget(window);
-    ctx->AddPointLight();
-
-    // ?? INPUT
     MouseBehaviour mb;
-
-    std::cout << "Elige comportamiento del mouse:\n";
-    std::cout << "1 -> Ball (colisiones)\n";
-    std::cout << "2 -> Enclose (encierra)\n";
-    std::cout << "3 -> Attract (gravedad)\n";
-    std::cout << "4 -> Grab (visual)\n";
-
-    int option;
+    std::cout << "1 -> Ball\n2 -> Enclose\n3 -> Attract\n4 -> Grab\n";
+    u32 option;
     std::cin >> option;
 
     switch (option)
@@ -66,11 +50,35 @@ void Run2(Onyx::Window *window)
         mb = MouseBehaviour_Grab;
         break;
     }
+    return mb;
+}
+
+u32 ChooseParticles()
+{
+    u32 N;
+    std::cout << "Numero de particulas: ";
+    std::cin >> N;
+    return N;
+}
+
+void Run2(Onyx::Window *window)
+{
+    Onyx::RenderContext<D2> *ctx = ONYX_CHECK_EXPRESSION(Onyx::Renderer::CreateContext<D2>());
+    const Onyx::StatMeshData<D2> data = Onyx::Assets::CreateSquareMesh<D2>();
+    const Onyx::Mesh square = Onyx::Assets::AddMesh(data);
+    ONYX_CHECK_EXPRESSION(Onyx::Assets::Upload());
+
+    Onyx::Camera<D2> *cam = window->CreateCamera<D2>();
+    ctx->AddTarget(window);
+    ctx->AddPointLight();
+
+    // ?? INPUT
+    const MouseBehaviour mb = MouseBehaviour_Ball; // ChooseBehaviour();
 
     const f32 mouseRadius = 0.15f;
     const f32 mouseOutline = 0.01f;
 
-    const u32 N = 10;
+    const u32 N = 10; // ChooseParticles();
     TKit::StackArray<Particle2D> particles;
     particles.Reserve(N);
 
@@ -325,42 +333,10 @@ void Run3(Onyx::Window *window)
 
     ctx->AddDirectionalLight(f32v3{1.f, 1.f, 1.f}, 0.8f);
 
-    enum MouseBehaviour : u8
-    {
-        MouseBehaviour_Grab,
-        MouseBehaviour_Ball,
-        MouseBehaviour_Enclose,
-        MouseBehaviour_Attract,
-    };
-
-    MouseBehaviour mb;
-
-    std::cout << "1 -> Ball\n2 -> Enclose\n3 -> Attract\n4 -> Grab\n";
-    int option;
-    std::cin >> option;
-
-    switch (option)
-    {
-    case 1:
-        mb = MouseBehaviour_Ball;
-        break;
-    case 2:
-        mb = MouseBehaviour_Enclose;
-        break;
-    case 3:
-        mb = MouseBehaviour_Attract;
-        break;
-    default:
-        mb = MouseBehaviour_Grab;
-        break;
-    }
-
+    const MouseBehaviour mb = MouseBehaviour_Ball; // ChooseBehaviour();
     const f32 mouseRadius = 0.2f;
 
-
-    u32 N;
-    std::cout << "Numero de particulas: ";
-    std::cin >> N;
+    const u32 N = 10; // ChooseParticles();
 
     TKit::StackArray<Particle3D> particles;
     particles.Reserve(N);
@@ -376,7 +352,10 @@ void Run3(Onyx::Window *window)
         particles.Append(p);
     }
 
-    const f32v3 bounds = f32v3{0.75f, 0.75f, 0.75f};
+    const f32 bw = 1.5f;
+    const f32 bh = 1.5f;
+    const f32 bd = 1.5f;
+    const f32v3 bounds = f32v3{0.5f * bw, 0.5f * bh, 0.5f * bd};
     const f32 g = 1.f;
 
     TKit::Clock clock{};
@@ -392,10 +371,8 @@ void Run3(Onyx::Window *window)
 
         const bool mouseDown = Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
 
-        //Mouse 2D proyectado a plano Z = 0
-        const f32v2 m2 = cam->GetWorldMousePosition();
-        const f32v3 mpos = f32v3{m2[0], m2[1], 0.f};
-
+        // Mouse 2D proyectado a plano Z = 0
+        const f32v3 mpos = cam->GetWorldMousePosition();
 
         for (auto &p : particles)
         {
@@ -416,7 +393,6 @@ void Run3(Onyx::Window *window)
                 }
             }
         }
-
 
         if (mouseDown)
         {
@@ -492,7 +468,6 @@ void Run3(Onyx::Window *window)
             }
         }
 
-
         const f32 e = 1.0f;
 
         for (u32 i = 0; i < particles.GetSize(); i++)
@@ -535,7 +510,6 @@ void Run3(Onyx::Window *window)
             }
         }
 
-
         for (auto &p : particles)
         {
             ctx->Push();
@@ -544,7 +518,6 @@ void Run3(Onyx::Window *window)
             ctx->StaticMesh(sphere);
             ctx->Pop();
         }
-
 
         if (mouseDown)
         {
@@ -555,54 +528,44 @@ void Run3(Onyx::Window *window)
             ctx->Pop();
         }
 
-        // vertices del cubo
-        f32v3 c[8];
-        c[0] = f32v3(-bounds[0], -bounds[1], -bounds[2]);
-        c[1] = f32v3(bounds[0], -bounds[1], -bounds[2]);
-        c[2] = f32v3(bounds[0], bounds[1], -bounds[2]);
-        c[3] = f32v3(-bounds[0], bounds[1], -bounds[2]);
-        c[4] = f32v3(-bounds[0], -bounds[1], bounds[2]);
-        c[5] = f32v3(bounds[0], -bounds[1], bounds[2]);
-        c[6] = f32v3(bounds[0], bounds[1], bounds[2]);
-        c[7] = f32v3(-bounds[0], bounds[1], bounds[2]);
-
-        //aristas
-        auto edge = [&](const f32v3 &a, const f32v3 &b) {
-            f32v3 mid = (a + b) * 0.5f;
-            f32v3 dir = b - a;
-
-            f32 len = sqrt(Math::Dot(dir, dir));
-            if (len < 0.0001f)
-                return;
-
-            ctx->Push();
-
-            ctx->SetTranslation(mid);
-
-            ctx->Scale(f32v3{0.02f, len * 0.5f, 0.02f});
-
-            ctx->StaticMesh(cylinder);
-
-            ctx->Pop();
-        };
-
-        // 12 aristas
-        int edges[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6},
-                            {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
-
-        for (int i = 0; i < 12; i++)
+        for (u32 i = 0; i < 12; ++i)
         {
-            edge(c[edges[i][0]], c[edges[i][1]]);
+            const u32 j = i % 3;
+            const u32 k = i / 4;
+
+            const f32 s1 = (k == 0 || k == 2) ? 1.f : -1.f;
+            const f32 s2 = (k == 0 || k == 3) ? 1.f : -1.f;
+
+            const f32 j0 = j == 0 ? -1.f : 1.f;
+            const f32 j1 = j == 1 ? -1.f : 1.f;
+            const f32 j2 = j == 2 ? -1.f : 1.f;
+
+            const f32 sx2 = s2 * j0;
+            const f32 sy2 = s2 * j1;
+            const f32 sz2 = s2 * j2;
+
+            const f32 x = bounds[0];
+            const f32 y = bounds[1];
+            const f32 z = bounds[2];
+
+            ctx->Line(cylinder, f32v3{s1 * x, s1 * y, s1 * z}, f32v3{sx2 * x, sy2 * y, sz2 * z});
         }
 
-        for (int i = 0; i < 8; i++)
-        {
-            ctx->Push();
-            ctx->SetTranslation(c[i]);
-            ctx->Scale(0.05f);
-            ctx->StaticMesh(sphere);
-            ctx->Pop();
-        }
+        // const f32 x = bounds[0];
+        // const f32 y = bounds[1];
+        // const f32 z = bounds[2];
+        // for (u32 i = 0; i < 2; ++i)
+        // {
+        //     ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        // }
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, z});
+        // ctx->Line(cylinder, f32v3{-x, y, -z}, f32v3{x, y, -z});
+
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
     });
 }
 
