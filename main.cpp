@@ -372,7 +372,30 @@ void Run3(Onyx::Window *window)
         const bool mouseDown = Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
 
         // Mouse 2D proyectado a plano Z = 0
-        const f32v3 mpos = cam->GetWorldMousePosition();
+        // vale alvaro, con la mpos lamentablemente no va a ser suficiente. en esencia, necesitas 2 cosas, y ahora te
+        // las introduzco:
+        //
+        // en 3D, lo que quieres es mapear tu posicion del raton a una en el mundo que sea agradable (por ejemplo, si tu
+        // raton esta encima de una esfera, estaria guay poder recoger el punto en el mundo en la superficie de esa
+        // esfera donde esta posado el raton. esto es un ejemplo y no necesitamos algo tan sofisticado, pero por ahi van
+        // los tiros)
+        //
+        // entonces, algo que seria muy util para poder construir algo asi es: la posicion del mouse del mundo en el
+        // plano de la camara (es decir, el plano que esta en tu cara. esto es lo que obtienes cuando pasas un depth de
+        // 0.f a GetWorldMousePosition(). la depth es 0 entonces el raton esta "en tu cara") Y una direccion: esto es,
+        // la direccion que apunta desde el raton, hasta el frente del raton. pues sorpresa por que... ambas las tienes!
+        //
+        // puedes usar esta function de aqui abajo con depth = 0.f para la pos del raton en la cara
+        const f32v3 mpos = cam->GetWorldMousePosition(0.f);
+        // y esta funcion de aqui para obtener tu direccion!! ahora solo necesitas una distancia. eso ya depende del
+        // caso. podrias disparar un rayo en la direccion "dir" y ver si impacta con algo, recoger la distancia, y ya
+        // tienes tu punto. esto se llama ray casting te animo a intentarlo!
+        // const f32v3 dir = cam->GetMouseRayCastDirection();
+        //
+        // una solucion menos sofisticada podria ser elegir esta distancia en base a una heuristica menos exacta i.e.,
+        // la esfera que mas lejos este del raton, la pared mas lejana etc, para poder cubrir toda la escena
+        //
+        // en ese punto final del raton, ahi pintarias tu "grab"
 
         for (auto &p : particles)
         {
@@ -528,44 +551,24 @@ void Run3(Onyx::Window *window)
             ctx->Pop();
         }
 
-        for (u32 i = 0; i < 12; ++i)
-        {
-            const u32 j = i % 3;
-            const u32 k = i / 4;
+        const f32 x = bounds[0];
+        const f32 y = bounds[1];
+        const f32 z = bounds[2];
 
-            const f32 s1 = (k == 0 || k == 2) ? 1.f : -1.f;
-            const f32 s2 = (k == 0 || k == 3) ? 1.f : -1.f;
+        ctx->Line(cylinder, f32v3{x, -y, -z}, f32v3{-x, -y, -z});
+        ctx->Line(cylinder, f32v3{x, -y, z}, f32v3{-x, -y, z});
+        ctx->Line(cylinder, f32v3{x, y, -z}, f32v3{-x, y, -z});
+        ctx->Line(cylinder, f32v3{x, y, z}, f32v3{-x, y, z});
 
-            const f32 j0 = j == 0 ? -1.f : 1.f;
-            const f32 j1 = j == 1 ? -1.f : 1.f;
-            const f32 j2 = j == 2 ? -1.f : 1.f;
+        ctx->Line(cylinder, f32v3{-x, y, -z}, f32v3{-x, -y, -z});
+        ctx->Line(cylinder, f32v3{-x, y, z}, f32v3{-x, -y, z});
+        ctx->Line(cylinder, f32v3{x, y, -z}, f32v3{x, -y, -z});
+        ctx->Line(cylinder, f32v3{x, y, z}, f32v3{x, -y, z});
 
-            const f32 sx2 = s2 * j0;
-            const f32 sy2 = s2 * j1;
-            const f32 sz2 = s2 * j2;
-
-            const f32 x = bounds[0];
-            const f32 y = bounds[1];
-            const f32 z = bounds[2];
-
-            ctx->Line(cylinder, f32v3{s1 * x, s1 * y, s1 * z}, f32v3{sx2 * x, sy2 * y, sz2 * z});
-        }
-
-        // const f32 x = bounds[0];
-        // const f32 y = bounds[1];
-        // const f32 z = bounds[2];
-        // for (u32 i = 0; i < 2; ++i)
-        // {
-        //     ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
-        // }
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, z});
-        // ctx->Line(cylinder, f32v3{-x, y, -z}, f32v3{x, y, -z});
-
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
-        // ctx->Line(cylinder, f32v3{-x, -y, -z}, f32v3{x, -y, -z});
+        ctx->Line(cylinder, f32v3{-x, -y, z}, f32v3{-x, -y, -z});
+        ctx->Line(cylinder, f32v3{x, -y, z}, f32v3{x, -y, -z});
+        ctx->Line(cylinder, f32v3{-x, y, z}, f32v3{-x, y, -z});
+        ctx->Line(cylinder, f32v3{x, y, z}, f32v3{x, y, -z});
     });
 }
 
