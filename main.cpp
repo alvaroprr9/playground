@@ -555,7 +555,36 @@ void Run3(Onyx::Window *window)
         const f32 y = bounds[1];
         const f32 z = bounds[2];
 
-        ctx->Line(cylinder, f32v3{x, -y, -z}, f32v3{-x, -y, -z});
+        for (int i = 0; i < 12; i++)
+        {
+            int axis = i / 4; // 0=X, 1=Y, 2=Z
+            int k = i % 4;    // combinación dentro del eje
+
+            int s1 = (k % 2 == 0) ? -1 : 1;
+            int s2 = (k / 2 == 0) ? -1 : 1;
+
+            f32v3 p1, p2;
+
+            if (axis == 0) // líneas paralelas a X
+            {
+                p1 = f32v3{-x, s1 * y, s2 * z};
+                p2 = f32v3{x, s1 * y, s2 * z};
+            }
+            else if (axis == 1) // paralelas a Y
+            {
+                p1 = f32v3{s1 * x, -y, s2 * z};
+                p2 = f32v3{s1 * x, y, s2 * z};
+            }
+            else // paralelas a Z
+            {
+                p1 = f32v3{s1 * x, s2 * y, -z};
+                p2 = f32v3{s1 * x, s2 * y, z};
+            }
+
+            ctx->Line(cylinder, p1, p2);
+        }
+
+        /*ctx->Line(cylinder, f32v3{x, -y, -z}, f32v3{-x, -y, -z});
         ctx->Line(cylinder, f32v3{x, -y, z}, f32v3{-x, -y, z});
         ctx->Line(cylinder, f32v3{x, y, -z}, f32v3{-x, y, -z});
         ctx->Line(cylinder, f32v3{x, y, z}, f32v3{-x, y, z});
@@ -568,9 +597,14 @@ void Run3(Onyx::Window *window)
         ctx->Line(cylinder, f32v3{-x, -y, z}, f32v3{-x, -y, -z});
         ctx->Line(cylinder, f32v3{x, -y, z}, f32v3{x, -y, -z});
         ctx->Line(cylinder, f32v3{-x, y, z}, f32v3{-x, y, -z});
-        ctx->Line(cylinder, f32v3{x, y, z}, f32v3{x, y, -z});
+        ctx->Line(cylinder, f32v3{x, y, z}, f32v3{x, y, -z});*/
     });
 }
+
+
+
+
+
 
 int main()
 {
