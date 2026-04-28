@@ -586,6 +586,7 @@ void Run3(Onyx::Window *window)
         const f32 y = bounds[1];
         const f32 z = bounds[2];
 
+        // TODO(Alvaro): Fix vertices of bounds
         for (int i = 0; i < 12; i++)
         {
             int axis = i / 4; // 0=X, 1=Y, 2=Z
