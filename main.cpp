@@ -92,6 +92,7 @@ void Run2(Onyx::Window *window)
         particles.Append(p);
     }
 
+    // TODO(Alvaro): Enlarge particles bounding box
     const f32 bw = 1.5f;
     const f32 bh = 1.5f;
     const f32 wallWidth = 0.1f;
@@ -110,6 +111,8 @@ void Run2(Onyx::Window *window)
         const bool mouseDown = Onyx::Input::IsMouseButtonPressed(window, Onyx::Input::Mouse_Button1);
         const f32v2 mpos = cam->GetWorldMousePosition();
 
+        // TODO(Alvaro) REFACTOR: Extract this into a function
+        // TODO(Alvaro) REFACTOR: Parametrize the dimension (2D/3D) so that it can be used in both cases
         for (auto &p : particles)
         {
             p.vel[1] -= g * dt;
@@ -131,7 +134,10 @@ void Run2(Onyx::Window *window)
                 }
             }
         }
+        //
 
+        // TODO(Alvaro) REFACTOR: Extract this into a function
+        // TODO(Alvaro) REFACTOR: Parametrize the dimension (2D/3D) so that it can be used in both cases
         if (mouseDown)
         {
             switch (mb)
@@ -207,7 +213,30 @@ void Run2(Onyx::Window *window)
                 break;
             }
         }
+        //
+
         const f32 e = 1.0f;
+
+        // TODO(Alvaro): For the following systems, attempt to build them in a composable way. It doesnt have to be like
+        // that from the start at all, but try to converge in a design where all of these features are able to coexist
+
+        // TODO(Alvaro): Implement a general friction coefficient that affects global velocities on particle collisions
+        // If feeling adventurous, try dividing both in normal and tangent frictions
+
+        // TODO(Alvaro): Implement an interaction system. That is:
+        //  - 1st: Let particles be attracted/repelled based on their charge to the center of the map (a property that
+        //  will need to be added)
+        //  - 2nd: Let particles be attracted/repelled based on their charge to the mouse position once you hold left
+        //  click (a property that will need to be added)
+        //  - 3rd: Let particles be attracted/repelled based on their charge to each other (a property that will need to
+        //  be added)
+        //  relation must be 1 / (r * r), where r is the distance to the target
+
+        // TODO(Alvaro): Implement a spring force
+        // - 1st: Figure out a way of adding an arbitrary force to a particle (by arbitrary meaning user can choose such
+        // force)
+        // - 2nd: With this system, attempt to attach springs between particles (or fixed objects, both are fine)
+        // - 3rd: As a bonus, attempt to be able to create chains of attached particles
 
         for (u32 i = 0; i < particles.GetSize(); i++)
             for (u32 j = i + 1; j < particles.GetSize(); j++)
@@ -256,6 +285,8 @@ void Run2(Onyx::Window *window)
             ctx->Pop();
         }
 
+        // TODO(Alvaro) REFACTOR: Extract this into a function
+        // TODO(Alvaro) REFACTOR: Parametrize the dimension (2D/3D) so that it can be used in both cases
         if (mouseDown)
         {
             ctx->Push();
@@ -600,11 +631,6 @@ void Run3(Onyx::Window *window)
         ctx->Line(cylinder, f32v3{x, y, z}, f32v3{x, y, -z});*/
     });
 }
-
-
-
-
-
 
 int main()
 {
