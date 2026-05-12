@@ -60,10 +60,15 @@
 
         "ONYX_BUILD_DEMOS": "ON",
         "ONYX_ENABLE_IMGUI": "ON",
-        "ONYX_ENABLE_IMPLOT": "ON",
-        "ONYX_ENABLE_NFD": "ON",
-        "ONYX_ENABLE_OBJ": "ON",
-        "ONYX_ENABLE_SHADER_COMPILATION": "ON"
+        "ONYX_ENABLE_IMPLOT": "OFF",
+        "ONYX_ENABLE_NFD": "OFF",
+        "ONYX_ENABLE_OBJ_LOAD": "OFF",
+        "ONYX_ENABLE_IMAGE_LOAD": "ON",
+        "ONYX_ENABLE_GLTF_LOAD": "OFF",
+        "ONYX_ENABLE_FONT_LOAD": "ON",
+        "ONYX_INCLUDE_DEFAULT_FONT": "ON",
+        "ONYX_ENABLE_SHADER_API": "OFF",
+        "ONYX_COMPILE_SHADERS_ON_EXEC": "OFF"
       }
     },
     {

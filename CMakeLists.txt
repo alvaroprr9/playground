@@ -12,7 +12,7 @@ include(FetchContent)
 FetchContent_Declare(
   onyx
   GIT_REPOSITORY https://github.com/ismawno/onyx.git
-  GIT_TAG v0.8.x
+  GIT_TAG v0.10.x
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE)
 FetchContent_MakeAvailable(onyx)
